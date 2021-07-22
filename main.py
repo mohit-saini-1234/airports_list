@@ -61,7 +61,7 @@ def get_Distance():
     lon2 = airport_id2["Lon"]
     loc2 = (lat2, lon2)
     Distance = hs.haversine(loc1,loc2, unit=Unit.MILES)
-    return(f"{Distance} Miles")
+    return jsonify(Distance)
     
     
 
