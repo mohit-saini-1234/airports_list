@@ -1,23 +1,11 @@
+import json
+from flask import Flask , request , abort , jsonify
 import haversine as hs
 from haversine import Unit
-import json
-from bson.objectid import ObjectId
-from flask_pymongo import PyMongo
-import pymongo
-from flask import Flask, abort, jsonify, request
 
-
-
-
-
-app = Flask(__name__)
-app.config["MONGO_URI"] = "mongodb+srv://1111111111:1111111111@cluster0.tzzym.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
-mongo = PyMongo(app)
-
-
-def serialize_doc(doc):
-    doc["_id"] = str(doc["_id"])
-    return doc
+app =Flask(__name__)
+with open('airports.json', 'r') as f:
+    distros_dict = json.load(f)
 
 
 #funcrion for sort 
@@ -27,51 +15,38 @@ def extract_time(json):
     except KeyError:
         return 0
 
-#route for add airports list 
-@app.route('/add_list' , methods=['POST'])
-def add_List():
-    tasks = request.json.get("airport_lists")
-    List =[i for i in mongo.db.airport_list.insert(tasks)]
-    return str(List)
+@app.route('/get_list', methods=['GET'])
+def get_List():
+    user =[distro for distro in distros_dict]
+    return jsonify(user)
 
 
 
-#route for get all airports list
-@app.route('/get_list' , methods=['GET'])
-def get_Airportslist():
-    find_list = mongo.db.airport_list.find()
-    get_list= [serialize_doc(doc) for doc in find_list]
-    return jsonify(get_list) 
-
-
-#distence between two airports by objectID
-@app.route('/distance' , methods=['GET'])
-def get_Distance():
-    airport_one = request.json.get("airport_one")
-    airport_two = request.json.get("airport_two")
+@app.route('/distance', methods=['GET'])
+def get_dis():
+    SiteNumber1 = request.json.get("SiteNumber1")
+    SiteNumber2 = request.json.get("SiteNumber2")
     
-    airport_id1 = mongo.db.airport_list.find_one({"_id": ObjectId(airport_one)})   
-    
-    lat1 = airport_id1["Lat"]
-    lon1 = airport_id1["Lon"]
-    loc1 = (lat1,lon1)
-    
-    airport_id2 = mongo.db.airport_list.find_one({"_id": ObjectId(airport_two)})  
-    lat2 = airport_id2["Lat"]
-    lon2 = airport_id2["Lon"]
-    loc2 = (lat2, lon2)
-    Distance = hs.haversine(loc1,loc2, unit=Unit.MILES)
+    for keyval in distros_dict:
+        if SiteNumber1.lower() == keyval['SiteNumber'].lower():
+            print(keyval['Lat'])
+            Lat1 =keyval['Lat']
+            Lon1 =keyval['Lon']
+            Loc1 =(Lat1,Lon1)
+        if SiteNumber2.lower() == keyval['SiteNumber'].lower():
+            Lat2 =keyval['Lat']
+            Lon2 =keyval['Lon']
+            Loc2 =(Lat2,Lon2)
+    Distance = hs.haversine(Loc1,Loc2, unit=Unit.MILES)
     return jsonify(Distance)
-    
-    
 
-@app.route('/get_nearby', methods=['GET'])
-def nearby_Airport():
+@app.route('/nearby', methods=['GET'])
+def get_Nearby():
     user_lat = request.json.get("Lat")
     user_lon = request.json.get("Lon")
     loc=(user_lat,user_lon)
-    find_inlist = mongo.db.airport_list.find({},{"Lat": 1 , "Lon": 1 , "City":1})
-    distance = []
+    find_inlist =[x for x in distros_dict]
+    distance=[];    
     for doc in find_inlist:
         LAT = doc["Lat"]
         LON = doc["Lon"]
@@ -80,4 +55,8 @@ def nearby_Airport():
     distance.sort(key=extract_time, reverse=True)
     nearests= distance[-3:]
     return jsonify(nearests)
+
+
+if __name__ == "__main__":
+    app.run()
     
