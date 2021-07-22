@@ -1,11 +1,14 @@
-import json
-from flask import Flask , request , abort , jsonify
 import haversine as hs
 from haversine import Unit
+import json
+from flask import Flask, abort, jsonify, request
 
-app =Flask(__name__)
+
+app = Flask(__name__)
+
 with open('airports.json', 'r') as f:
-    distros_dict = json.load(f)
+    airports_list = json.load(f)
+    
 
 
 #funcrion for sort 
@@ -15,19 +18,23 @@ def extract_time(json):
     except KeyError:
         return 0
 
-@app.route('/get_list', methods=['GET'])
-def get_List():
-    user =[distro for distro in distros_dict]
-    return jsonify(user)
 
 
 
-@app.route('/distance', methods=['GET'])
-def get_dis():
+#route for get all airports list
+@app.route('/get_list' , methods=['GET'])
+def get_Airportslist():
+    get_list= [distro for distro in airports_list]
+    return jsonify(get_list) 
+
+
+#distence between two airports by objectID
+@app.route('/distance' , methods=['GET'])
+def get_Distance():
     SiteNumber1 = request.json.get("SiteNumber1")
     SiteNumber2 = request.json.get("SiteNumber2")
     
-    for keyval in distros_dict:
+    for keyval in airports_list:
         if SiteNumber1.lower() == keyval['SiteNumber'].lower():
             print(keyval['Lat'])
             Lat1 =keyval['Lat']
@@ -39,14 +46,16 @@ def get_dis():
             Loc2 =(Lat2,Lon2)
     Distance = hs.haversine(Loc1,Loc2, unit=Unit.MILES)
     return jsonify(Distance)
+    
+    
 
-@app.route('/nearby', methods=['GET'])
-def get_Nearby():
+@app.route('/get_nearby', methods=['GET'])
+def nearby_Airport():
     user_lat = request.json.get("Lat")
     user_lon = request.json.get("Lon")
     loc=(user_lat,user_lon)
-    find_inlist =[x for x in distros_dict]
-    distance=[];    
+    find_inlist = [x for x in airports_list]
+    distance = []
     for doc in find_inlist:
         LAT = doc["Lat"]
         LON = doc["Lon"]
@@ -57,6 +66,3 @@ def get_Nearby():
     return jsonify(nearests)
 
 
-if __name__ == "__main__":
-    app.run()
-    
